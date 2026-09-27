@@ -1,0 +1,97 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
+
+-- PON AQUÍ TU USER ID
+local ADMINS = {
+	[destructor201372] = true,
+}
+
+local remote = ReplicatedStorage:FindFirstChild("BrainrotAdmin")
+
+if not remote then
+	remote = Instance.new("RemoteEvent")
+	remote.Name = "BrainrotAdmin"
+	remote.Parent = ReplicatedStorage
+end
+
+local brainrots = ServerStorage:WaitForChild("Brainrots")
+
+local function isAdmin(player)
+	return ADMINS[player.UserId] == true
+end
+
+local function spawnBrainrot(player, name)
+	if not isAdmin(player) then return end
+
+	local model = brainrots:FindFirstChild(name)
+
+	if not model or not model:IsA("Model") then
+		return
+	end
+
+	local clone = model:Clone()
+	clone:SetAttribute("IsBrainrot", true)
+	clone.Parent = workspace
+
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+
+	if root then
+		clone:PivotTo(root.CFrame * CFrame.new(0, 0, -10))
+	end
+end
+
+local function clearBrainrots(player)
+	if not isAdmin(player) then return end
+
+	for _, object in ipairs(workspace:GetChildren()) do
+		if object:GetAttribute("IsBrainrot") then
+			object:Destroy()
+		end
+	end
+end
+
+remote.OnServerEvent:Connect(function(player, command, argument)
+
+	if not isAdmin(player) then
+		return
+	end
+
+	if command == "Spawn" then
+		spawnBrainrot(player, tostring(argument))
+
+	elseif command == "Clear" then
+		clearBrainrots(player)
+
+	elseif command == "Speed" then
+		local value = tonumber(argument)
+
+		if value and player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+			if humanoid then
+				humanoid.WalkSpeed = math.clamp(value, 0, 100)
+			end
+		end
+
+	elseif command == "Jump" then
+		local value = tonumber(argument)
+
+		if value and player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+			if humanoid then
+				humanoid.JumpPower = math.clamp(value, 0, 150)
+			end
+		end
+
+	elseif command == "Heal" then
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+		if humanoid then
+			humanoid.Health = humanoid.MaxHealth
+		end
+	end
+end)
